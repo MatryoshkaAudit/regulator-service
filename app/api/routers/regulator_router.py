@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import db_manager
+from app.database import db_manager, get_db_session
 from app.repositories.regulator_repository import RegulatorRepository
 from app.services.compliance_service import ComplianceService
 from app.services.sanctions_service import SanctionsService
@@ -15,7 +15,7 @@ from app.dto.certificate_dto import IssueCertificateRequestDTO, CertificateRespo
 router = APIRouter(prefix="/api/v1/regulator", tags=["Regulator Control Center"])
 
 
-def get_repo(session: AsyncSession = Depends(db_manager.get_session)) -> RegulatorRepository:
+def get_repo(session: AsyncSession = Depends(get_db_session)) -> RegulatorRepository:
     return RegulatorRepository(session)
 
 
