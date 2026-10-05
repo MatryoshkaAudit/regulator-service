@@ -8,6 +8,7 @@ from app.config import regulator_settings
 from app.database import db_manager
 from app.api.routers import regulator_router, health_router
 from app.grpc_server import serve_grpc
+from app.middleware import CorrelationIdMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +41,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(CorrelationIdMiddleware)
 
 app.include_router(health_router.router)
 app.include_router(regulator_router.router)
