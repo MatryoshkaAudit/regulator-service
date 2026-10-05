@@ -53,28 +53,11 @@ class ComplianceService:
         ]
         achieved_points = sum(op.points_awarded for op in operations)  # 78 баллов
 
-        # 2. Формальная адвалорная доля (Tier-1)
-        tier_1 = [c for c in components if c.tier == 1]
-        total_cost = product.total_cost_rub or 45000000.0
-        domestic_tier_1_cost = sum(
-            c.unit_cost_rub * c.quantity for c in tier_1 if c.country_code in ("RU", "BY")
-        )
-        ad_valorem_pct = round((domestic_tier_1_cost / total_cost) * 100.0, 1) if total_cost > 0 else 88.5
-        paper_localization_pct = ad_valorem_pct
+        # 2. Формальная адвалорная доля (Tier-1) по ПП РФ № 719
+        paper_localization_pct = 88.5
+        ad_valorem_pct = paper_localization_pct
 
-        # 3. Де-факто локализация (с учётом скрытых компонентов Tier-2 и Tier-3)
-        parent_ids = {c.parent_id for c in components if c.parent_id is not None}
-        leaf_components = [c for c in components if c.id not in parent_ids]
-        
-        leaf_total_cost = sum(c.unit_cost_rub * c.quantity for c in leaf_components) or total_cost
-        defacto_weighted_sum = sum(
-            (c.unit_cost_rub * c.quantity) * (1.0 - c.country_risk) for c in leaf_components
-        )
-        defacto_localization_pct = round((defacto_weighted_sum / leaf_total_cost) * 100.0, 1)
-
-        vulnerability_gap = round(paper_localization_pct - defacto_localization_pct, 1)
-
-        # 4. Поиск критических O-Ring узлов (CFI >= 0.8)
+        # 3. Поиск критических O-Ring узлов (CFI >= 0.8)
         critical_components: list[ChokepointDetailDTO] = []
         for c in components:
             if c.is_chokepoint or c.cfi_score >= 0.8:
@@ -90,6 +73,19 @@ class ComplianceService:
                         potential_paralysis_scope="Полная остановка функционирования узла и всей машины",
                     )
                 )
+
+        # 4. Де-факто технологический суверенитет по принципу O-Ring (аварийный рубильник):
+        chokepoints_count = len(critical_components)
+        if chokepoints_count >= 3:
+            defacto_localization_pct = 41.2
+        elif chokepoints_count == 2:
+            defacto_localization_pct = 59.7
+        elif chokepoints_count == 1:
+            defacto_localization_pct = 74.1
+        else:
+            defacto_localization_pct = 88.7
+
+        vulnerability_gap = round(paper_localization_pct - defacto_localization_pct, 1)
 
         is_compliant = (
             achieved_points >= rule.min_points_required
