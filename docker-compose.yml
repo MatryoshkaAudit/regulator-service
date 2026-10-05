@@ -1,0 +1,14 @@
+services:
+  regulator-service:
+    build: .
+    container_name: matryoshka_regulator_service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+      - "50052:50052"
+    environment:
+      - DB_URL=postgresql+asyncpg://matryoshka:matryoshka_pass@postgres:5432/matryoshka_db
+      - SERVICE_REST_PORT=8002
+      - SERVICE_GRPC_PORT=50052
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
