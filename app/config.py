@@ -3,16 +3,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
-    url: str = "postgresql+asyncpg://matryoshka:matryoshka_pass@localhost:5432/matryoshka_db"
+    url: str = os.getenv("DATABASE_URL") or os.getenv("DB_URL") or "postgresql+asyncpg://matryoshka:matryoshka_pass@localhost:5432/matryoshka_db"
 
     model_config = SettingsConfigDict(env_prefix="db_", env_file=".env", extra="ignore")
 
 
 class OpenRouterSettings(BaseSettings):
-    api_key: str = ""
-    model: str = "anthropic/claude-3.5-sonnet"
+    api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    model: str = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct")
     base_url: str = "https://openrouter.ai/api/v1"
-    timeout_seconds: float = 30.0
+    timeout_seconds: float = 35.0
 
     model_config = SettingsConfigDict(env_prefix="openrouter_", env_file=".env", extra="ignore")
 
