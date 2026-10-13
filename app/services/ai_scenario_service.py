@@ -223,18 +223,20 @@ class AIScenarioService:
                         shock_safe = 0.0
                         has_chokepoint_shock = False
                         critical_nodes: list[str] = []
+                        o_ring_shock_multiplier = 1.0
 
                         for c in leaves:
                             eff_risk = calibrated_risks.get(c.country_code, c.country_risk)
-                            shock_safe += ((c.unit_cost_rub * c.quantity) / tot_cost) * (1.0 - eff_risk)
+                            analog_w = 1.0 if c.analog_status == "FULL_COMPATIBLE" else (0.7 if c.analog_status == "REQUIRES_REWORK" else (1.0 if c.country_code in ("RU", "BY") else 0.0))
+                            shock_safe += ((c.unit_cost_rub * c.quantity) / tot_cost) * (1.0 - eff_risk) * analog_w
                             cfi_shock = float(c.criticality) * float(eff_risk) * (1.0 - float(c.analog_availability))
                             if cfi_shock >= 0.70:
                                 has_chokepoint_shock = True
+                                o_ring_shock_multiplier *= (1.0 - 0.25 * float(cfi_shock))
                                 critical_nodes.append(f"{c.name} ({c.country_code}, {c.unit_cost_rub:,.0f} ₽)")
 
-                        shock_loc = round(shock_safe * 100, 1)
+                        shock_loc = round(shock_safe * 100.0 * o_ring_shock_multiplier, 1)
                         if has_chokepoint_shock:
-                            shock_loc = min(shock_loc, 24.5)
                             plants_at_risk += 1
 
                         base_loc_sum += base_loc
