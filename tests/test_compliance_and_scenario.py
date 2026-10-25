@@ -1,7 +1,9 @@
-import pytest
 import hashlib
-from app.services.ai_scenario_service import AIScenarioService
+
+import pytest
+
 from app.dto.scenario_dto import AIScenarioRequestDTO
+from app.services.ai_scenario_service import AIScenarioService
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,12 @@
-import asyncio
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routers import health_router, regulator_router
 from app.config import regulator_settings
 from app.database import db_manager
-from app.api.routers import regulator_router, health_router
 from app.grpc_server import serve_grpc
 from app.middleware import CorrelationIdMiddleware
 

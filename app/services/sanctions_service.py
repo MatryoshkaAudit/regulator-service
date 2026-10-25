@@ -1,10 +1,11 @@
 import logging
-from app.repositories.regulator_repository import RegulatorRepository
+
 from app.dto.sanctions_dto import (
+    ChokepointDetailDTO,
     SanctionsShockRequestDTO,
     SanctionsShockResultDTO,
-    ChokepointDetailDTO,
 )
+from app.repositories.regulator_repository import RegulatorRepository
 
 logger = logging.getLogger(__name__)
 

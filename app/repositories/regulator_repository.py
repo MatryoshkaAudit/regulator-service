@@ -1,18 +1,18 @@
-from datetime import datetime
 import hashlib
 import json
-from sqlalchemy import select, update
-from sqlalchemy.orm import selectinload
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from matryoshka_db.db_models import (
-    Product,
-    Component,
-    PolicyRule,
-    CountryRisk,
-    Certificate,
-    AuditLog,
     AuditActorTypeEnum,
+    AuditLog,
+    Certificate,
+    Component,
+    CountryRisk,
+    PolicyRule,
+    Product,
 )
 
 

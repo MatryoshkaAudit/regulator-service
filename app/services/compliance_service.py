@@ -1,10 +1,11 @@
 import logging
-from app.repositories.regulator_repository import RegulatorRepository
+
 from app.dto.compliance_dto import (
-    PP719AuditResponseDTO,
-    OperationBreakdownDTO,
     ChokepointDetailDTO,
+    OperationBreakdownDTO,
+    PP719AuditResponseDTO,
 )
+from app.repositories.regulator_repository import RegulatorRepository
 
 logger = logging.getLogger(__name__)
 

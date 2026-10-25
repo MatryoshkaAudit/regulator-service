@@ -1,16 +1,18 @@
 import logging
+
 import grpc
-from protos.policy import policy_service_pb2, policy_service_pb2_grpc
-from protos.audit import audit_service_pb2, audit_service_pb2_grpc
+
 from app.database import db_manager
-from app.repositories.regulator_repository import RegulatorRepository
-from app.services.compliance_service import ComplianceService
-from app.services.sanctions_service import SanctionsService
-from app.services.ai_scenario_service import AIScenarioService
-from app.services.certificate_service import CertificateService
+from app.dto.certificate_dto import IssueCertificateRequestDTO
 from app.dto.sanctions_dto import SanctionsShockRequestDTO
 from app.dto.scenario_dto import AIScenarioRequestDTO
-from app.dto.certificate_dto import IssueCertificateRequestDTO
+from app.repositories.regulator_repository import RegulatorRepository
+from app.services.ai_scenario_service import AIScenarioService
+from app.services.certificate_service import CertificateService
+from app.services.compliance_service import ComplianceService
+from app.services.sanctions_service import SanctionsService
+from protos.audit import audit_service_pb2, audit_service_pb2_grpc
+from protos.policy import policy_service_pb2, policy_service_pb2_grpc
 
 logger = logging.getLogger(__name__)
 

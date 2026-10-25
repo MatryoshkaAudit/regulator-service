@@ -1,11 +1,15 @@
-from datetime import datetime, timedelta
 import hashlib
 import random
+from datetime import datetime, timedelta, timezone
 
+from app.dto.certificate_dto import CertificateResponseDTO, IssueCertificateRequestDTO
 from app.repositories.regulator_repository import RegulatorRepository
 from app.services.compliance_service import ComplianceService
-from app.dto.certificate_dto import IssueCertificateRequestDTO, CertificateResponseDTO
-from matryoshka_db.db_models import Certificate, ComplianceStatusEnum, AuditActorTypeEnum
+from matryoshka_db.db_models import (
+    AuditActorTypeEnum,
+    Certificate,
+    ComplianceStatusEnum,
+)
 
 
 class CertificateService:
@@ -16,8 +20,9 @@ class CertificateService:
     async def issue_certificate(self, req: IssueCertificateRequestDTO) -> CertificateResponseDTO:
         audit_res = await self.compliance_service.evaluate_product(req.product_id)
 
-        reg_number = f"RU-МПТ-719/{datetime.utcnow().year}-{random.randint(10000, 99999)}"
-        issued_at = datetime.utcnow()
+        now = datetime.now(timezone.utc)
+        reg_number = f"RU-МПТ-719/{now.year}-{random.randint(10000, 99999)}"
+        issued_at = now
         expires_at = issued_at + timedelta(days=req.valid_months * 30)
 
         signature_payload = f"{reg_number}:{req.product_id}:{audit_res.achieved_points}:{audit_res.defacto_localization_pct}:{issued_at.isoformat()}"

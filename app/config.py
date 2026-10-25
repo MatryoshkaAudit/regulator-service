@@ -1,4 +1,5 @@
 import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,13 @@ class OpenRouterSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="openrouter_", env_file=".env", extra="ignore")
 
 
+class ExternalServicesSettings(BaseSettings):
+    analytics_service_url: str = os.getenv("ANALYTICS_SERVICE_URL", "http://analytics-service:8003")
+    enterprise_service_url: str = os.getenv("ENTERPRISE_SERVICE_URL", "http://enterprise-service:8001")
+
+    model_config = SettingsConfigDict(env_prefix="external_", env_file=".env", extra="ignore")
+
+
 class RegulatorServiceSettings(BaseSettings):
     app_name: str = "Matryoshka Regulator Service"
     rest_host: str = "0.0.0.0"
@@ -30,4 +38,5 @@ class RegulatorServiceSettings(BaseSettings):
 
 database_settings = DatabaseSettings()
 openrouter_settings = OpenRouterSettings()
+external_settings = ExternalServicesSettings()
 regulator_settings = RegulatorServiceSettings()

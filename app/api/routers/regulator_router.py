@@ -1,25 +1,25 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db_session
-from app.repositories.regulator_repository import RegulatorRepository
-from app.services.compliance_service import ComplianceService
-from app.services.sanctions_service import SanctionsService
-from app.services.ai_scenario_service import AIScenarioService
-from app.services.certificate_service import CertificateService
-from app.services.overview_service import OverviewService
+from app.dto.certificate_dto import CertificateResponseDTO, IssueCertificateRequestDTO
 from app.dto.compliance_dto import PP719AuditResponseDTO
+from app.dto.overview_dto import (
+    CountryRiskItemDTO,
+    CreateCountryRiskDTO,
+    HiddenImportItemDTO,
+    PlantOverviewItemDTO,
+    SetStrategicStatusDTO,
+    UpdateCountryRiskDTO,
+)
 from app.dto.sanctions_dto import SanctionsShockRequestDTO, SanctionsShockResultDTO
 from app.dto.scenario_dto import AIScenarioRequestDTO, AIScenarioResponseDTO
-from app.dto.certificate_dto import IssueCertificateRequestDTO, CertificateResponseDTO
-from app.dto.overview_dto import (
-    PlantOverviewItemDTO,
-    CountryRiskItemDTO,
-    UpdateCountryRiskDTO,
-    CreateCountryRiskDTO,
-    SetStrategicStatusDTO,
-    HiddenImportItemDTO,
-)
+from app.repositories.regulator_repository import RegulatorRepository
+from app.services.ai_scenario_service import AIScenarioService
+from app.services.certificate_service import CertificateService
+from app.services.compliance_service import ComplianceService
+from app.services.overview_service import OverviewService
+from app.services.sanctions_service import SanctionsService
 
 router = APIRouter(prefix="/api/v1/regulator", tags=["Regulator Control Center & Sanctions Audit"])
 
@@ -134,9 +134,9 @@ async def get_compliance_audit(
         service = ComplianceService(repo)
         return await service.evaluate_product(product_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка аудита: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка аудита: {e!s}") from e
 
 
 @router.post("/simulate-shock", response_model=SanctionsShockResultDTO)
@@ -149,7 +149,7 @@ async def simulate_sanctions_shock(
         service = SanctionsService(repo)
         return await service.simulate_shock(payload)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка симуляции: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка симуляции: {e!s}") from e
 
 
 @router.post("/ai-scenario", response_model=AIScenarioResponseDTO)
@@ -172,4 +172,4 @@ async def issue_compliance_certificate(
         service = CertificateService(repo)
         return await service.issue_certificate(payload)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка выдачи сертификата: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка выдачи сертификата: {e!s}") from e

@@ -1,11 +1,10 @@
 import json
 import logging
 import uuid
-import httpx
-from datetime import datetime, timezone
 
-from app.config import openrouter_settings
-from app.repositories.regulator_repository import RegulatorRepository
+import httpx
+
+from app.config import external_settings, openrouter_settings
 from app.dto.scenario_dto import (
     AIScenarioRequestDTO,
     AIScenarioResponseDTO,
@@ -13,6 +12,7 @@ from app.dto.scenario_dto import (
     IndustrySubstitutionAuditDTO,
     StrategicPlantAlertDTO,
 )
+from app.repositories.regulator_repository import RegulatorRepository
 
 logger = logging.getLogger(__name__)
 
@@ -280,9 +280,10 @@ class AIScenarioService:
 
         # Фиксация аудита в ClickHouse через API аналитики
         try:
+            url = f"{external_settings.analytics_service_url}/api/v1/analytics/events"
             async with httpx.AsyncClient(timeout=2.0) as client:
                 await client.post(
-                    "http://analytics-service:8003/api/v1/analytics/events",
+                    url,
                     json={
                         "product_id": req.product_id,
                         "product_name": "Отраслевой стресс-тест",
@@ -299,8 +300,8 @@ class AIScenarioService:
                         }),
                     },
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Не удалось записать событие сценария в ClickHouse: %s", e)
 
         return AIScenarioResponseDTO(
             scenario_id=scenario_id,
