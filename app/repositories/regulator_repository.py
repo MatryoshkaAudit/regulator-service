@@ -155,24 +155,29 @@ class RegulatorRepository:
             select(Certificate)
             .where(Certificate.product_id == product_id)
             .order_by(Certificate.id.desc())
+            .limit(1)
         )
         result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
-    async def record_audit_log(
+    async def log_audit_event(
         self,
         event_type: str,
-        resource_id: int,
-        details: dict,
+        actor_id: int = 1,
+        actor_role: AuditActorTypeEnum = AuditActorTypeEnum.REGULATOR,
+        resource_type: str = "certificate",
+        resource_id: int = 0,
+        details: dict | None = None,
     ) -> AuditLog:
+        details = details or {}
         payload = json.dumps(details, sort_keys=True)
         hash_val = hashlib.sha256(payload.encode()).hexdigest()
 
         log_entry = AuditLog(
             event_type=event_type,
-            actor_id=1,
-            actor_role=AuditActorTypeEnum.REGULATOR,
-            resource_type="product",
+            actor_id=actor_id,
+            actor_role=actor_role,
+            resource_type=resource_type,
             resource_id=resource_id,
             details=details,
             hash_sha256=hash_val,
@@ -181,3 +186,18 @@ class RegulatorRepository:
         await self.session.flush()
         await self.session.commit()
         return log_entry
+
+    async def record_audit_log(
+        self,
+        event_type: str,
+        resource_id: int,
+        details: dict,
+    ) -> AuditLog:
+        return await self.log_audit_event(
+            event_type=event_type,
+            actor_id=1,
+            actor_role=AuditActorTypeEnum.REGULATOR,
+            resource_type="product",
+            resource_id=resource_id,
+            details=details,
+        )

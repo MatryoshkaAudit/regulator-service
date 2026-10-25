@@ -5,6 +5,7 @@ class IssueCertificateRequestDTO(BaseModel):
     product_id: int
     certified_by: str = "Департамент машиностроения Минпромторга РФ"
     valid_months: int = 12
+    force_reissue: bool = False
 
 
 class CertificateResponseDTO(BaseModel):

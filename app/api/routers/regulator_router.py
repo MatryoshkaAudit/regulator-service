@@ -162,6 +162,22 @@ async def generate_ai_scenario(
     return await service.generate_scenario(payload, repo=repo)
 
 
+@router.get("/certificates/{product_id}", response_model=CertificateResponseDTO)
+async def get_product_certificate(
+    product_id: int,
+    repo: RegulatorRepository = Depends(get_repo),
+):
+    """Получить действующее цифровое заключение Минпромторга для изделия"""
+    try:
+        service = CertificateService(repo)
+        cert = await service.get_latest_certificate(product_id)
+        if not cert:
+            cert = await service.issue_certificate(IssueCertificateRequestDTO(product_id=product_id))
+        return cert
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка получения сертификата: {e!s}") from e
+
+
 @router.post("/issue-certificate", response_model=CertificateResponseDTO)
 async def issue_compliance_certificate(
     payload: IssueCertificateRequestDTO,
