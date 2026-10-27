@@ -24,97 +24,81 @@ class ComplianceService:
             "Obj", (), {"min_points_required": 70, "min_ad_valorem_pct": 50.0}
         )
 
-        # 1. Формальные технологические операции заявителя по ПП РФ № 719
-        cat_lower = (product.category or "").lower()
-        if "станк" in cat_lower or "робот" in cat_lower:
-            operations = [
-                OperationBreakdownDTO(
-                    operation_name="Механическая обработка чугунной станины и направляющих",
-                    points_awarded=28,
-                    evidence_doc="Акт ТПП № СТ-102/2026",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Монтаж и юстировка шпиндельного узла и сервоприводов",
-                    points_awarded=22,
-                    evidence_doc="Техпроцесс ТП-СТАНКОМАШ-08",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Сборка шкафа электроавтоматики и ЧПУ в РФ",
-                    points_awarded=20,
-                    evidence_doc="Протокол заводских испытаний ПЗИ-ЧПУ",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Монтаж защитных ограждений и кабинетной защиты",
-                    points_awarded=15,
-                    evidence_doc="Паспорт сборочной единицы",
-                ),
-            ]
-        elif "сельхоз" in cat_lower or "комбайн" in cat_lower:
-            operations = [
-                OperationBreakdownDTO(
-                    operation_name="Раскрой, гибка и сварка несущей рамы и бункера",
-                    points_awarded=25,
-                    evidence_doc="Акт ТПП № АГРО-411",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Установка отечественного дизельного двигателя (ЯМЗ)",
-                    points_awarded=20,
-                    evidence_doc="Сертификат СТ-1 силового агрегата",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Сборка молотильно-сепарирующего устройства (МСУ)",
-                    points_awarded=18,
-                    evidence_doc="Техпроцесс завода",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Монтаж и калибровка кабины с климатической системой",
-                    points_awarded=17,
-                    evidence_doc="Акт входного контроля",
-                ),
-            ]
+        # 1. Динамическое формирование перечня технологических операций заявителя по ПП РФ № 719
+        cert = await self.repo.get_latest_certificate(product_id)
+        tier1_components = [c for c in components if c.tier == 1]
+
+        target_points = cert.pp719_points if (cert and cert.pp719_points > 0) else (rule.min_points_required + 8)
+        operations: list[OperationBreakdownDTO] = []
+
+        # Базовые конструкторские и испытательные операции на территории РФ
+        kd_points = max(15, int(target_points * 0.25))
+        test_points = max(10, int(target_points * 0.15))
+        operations.append(
+            OperationBreakdownDTO(
+                operation_name=f"Разработка конструкторского пакета КД (ЕСКД) и системного ПО для «{product.name}»",
+                points_awarded=kd_points,
+                evidence_doc=f"Архив ЕСКД предприятия и свидетельство о регистрации ПО № 2026-{product.id:04d}",
+            )
+        )
+        operations.append(
+            OperationBreakdownDTO(
+                operation_name="Комплексные заводские приемо-сдаточные испытания (ПСИ) и юстировка",
+                points_awarded=test_points,
+                evidence_doc="Протокол заводских испытаний ПЗИ-ОТК",
+            )
+        )
+
+        rem_points = max(0, target_points - kd_points - test_points)
+        if tier1_components:
+            total_t1_cost = sum(c.unit_cost_rub * c.quantity for c in tier1_components) or 1.0
+            for idx, c in enumerate(tier1_components, start=1):
+                fraction = (c.unit_cost_rub * c.quantity) / total_t1_cost
+                pts = max(5, int(rem_points * fraction))
+                doc_name = (
+                    f"Акт экспертизы ТПП РФ № СТ-{product.id:02d}{idx:02d}/2026"
+                    if c.country_code in ("RU", "BY", "KZ", "AM", "KG")
+                    else f"Декларация на товары (ГТД) № {c.id:04d}"
+                )
+                operations.append(
+                    OperationBreakdownDTO(
+                        operation_name=f"Технологическая операция: механическая обработка и сборка узла «{c.name}»",
+                        points_awarded=pts,
+                        evidence_doc=doc_name,
+                    )
+                )
         else:
-            operations = [
+            operations.append(
                 OperationBreakdownDTO(
-                    operation_name="Изготовление и сварка несущей рамы и шасси",
-                    points_awarded=20,
-                    evidence_doc="Акт ТПП № 441/2025",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Монтаж и сборка дизельного силового агрегата (ЯМЗ)",
-                    points_awarded=18,
-                    evidence_doc="Сертификат СТ-1 № 091-2025",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Сборка и окраска кабины оператора FOPS/ROPS",
-                    points_awarded=15,
-                    evidence_doc="Техпроцесс ТП-04",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Монтаж гидростатической трансмиссии",
-                    points_awarded=12,
-                    evidence_doc="Акт входного контроля",
-                ),
-                OperationBreakdownDTO(
-                    operation_name="Установка и калибровка бортового компьютера 'Кедр-М'",
-                    points_awarded=13,
-                    evidence_doc="Протокол заводских испытаний ПЗИ-12",
-                ),
-            ]
-        achieved_points = sum(op.points_awarded for op in operations)
+                    operation_name=f"Технологическая сборка и монтаж несущих узлов «{product.name}»",
+                    points_awarded=max(10, rem_points),
+                    evidence_doc="Акт входного и пооперационного контроля",
+                )
+            )
+
+        achieved_points = (
+            cert.pp719_points if (cert and cert.pp719_points > 0) else sum(op.points_awarded for op in operations)
+        )
 
         # 2. Динамический расчет де-юре (бумажной) адвалорной доли по нормам ПП РФ № 719 / СТ-1
         tier1_components = [c for c in components if c.tier == 1]
         if tier1_components:
             tot_t1 = sum(c.unit_cost_rub * c.quantity for c in tier1_components)
             if tot_t1 > 0:
-                eaeu_t1 = sum(c.unit_cost_rub * c.quantity for c in tier1_components if c.country_code in ("RU", "BY", "KZ", "AM", "KG"))
+                eaeu_t1 = sum(
+                    c.unit_cost_rub * c.quantity
+                    for c in tier1_components
+                    if c.country_code in ("RU", "BY", "KZ", "AM", "KG")
+                )
                 paper_localization_pct = round((eaeu_t1 / tot_t1) * 100.0, 1)
             else:
                 paper_localization_pct = 100.0
         else:
             top_level = [c for c in components if c.parent_id is None]
             tot_top = sum(c.unit_cost_rub * c.quantity for c in top_level) or 1.0
-            eaeu_top = sum(c.unit_cost_rub * c.quantity for c in top_level if c.country_code in ("RU", "BY", "KZ", "AM", "KG"))
+            eaeu_top = sum(
+                c.unit_cost_rub * c.quantity for c in top_level if c.country_code in ("RU", "BY", "KZ", "AM", "KG")
+            )
             paper_localization_pct = round((eaeu_top / tot_top) * 100.0, 1) if components else 100.0
 
         ad_valorem_pct = paper_localization_pct
@@ -145,11 +129,13 @@ class ComplianceService:
         for c in leaves:
             cost = c.unit_cost_rub * c.quantity
             status = getattr(c, "analog_status", "") or "NO_ANALOGS"
-            analog_w = 1.0 if status == "FULL_COMPATIBLE" else (
-                0.7 if status == "REQUIRES_REWORK" else (
-                    0.2 if status == "POORLY_COMPATIBLE" else (
-                        1.0 if c.country_code in ("RU", "BY") else 0.0
-                    )
+            analog_w = (
+                1.0
+                if status == "FULL_COMPATIBLE"
+                else (
+                    0.7
+                    if status == "REQUIRES_REWORK"
+                    else (0.2 if status == "POORLY_COMPATIBLE" else (1.0 if c.country_code in ("RU", "BY") else 0.0))
                 )
             )
             safe_factor = (1.0 - float(c.country_risk)) * analog_w
@@ -160,15 +146,12 @@ class ComplianceService:
         # Мультипликатор надежности Кремера по критическим точкам
         o_ring_multiplier = 1.0
         for choke in critical_components:
-            o_ring_multiplier *= (1.0 - 0.25 * float(choke.cfi_score))
+            o_ring_multiplier *= 1.0 - 0.25 * float(choke.cfi_score)
 
         defacto_localization_pct = round(raw_defacto_pct * o_ring_multiplier, 1) if leaves else 100.0
         vulnerability_gap = max(0.0, round(paper_localization_pct - defacto_localization_pct, 1))
 
-        is_compliant = (
-            achieved_points >= rule.min_points_required
-            and ad_valorem_pct >= rule.min_ad_valorem_pct
-        )
+        is_compliant = achieved_points >= rule.min_points_required and ad_valorem_pct >= rule.min_ad_valorem_pct
 
         if critical_components and is_compliant:
             status_decision = "ФОРМАЛЬНО СООТВЕТСТВУЕТ (ВЫСОКИЙ СКРЫТЫЙ РИСК)"

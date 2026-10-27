@@ -38,17 +38,17 @@ class UpdateCountryRiskDTO(BaseModel):
 
 
 class CreateCountryRiskDTO(BaseModel):
-    country_code: str
-    country_name: str
+    country_code: str = Field(min_length=2, max_length=3)
+    country_name: str = Field(min_length=2, max_length=100)
     risk_factor: float = Field(default=0.5, ge=0.0, le=1.0)
     is_unfriendly: bool = False
-    sanctions_regime: str | None = None
+    sanctions_regime: str | None = Field(default=None, max_length=100)
 
 
 class SetStrategicStatusDTO(BaseModel):
     is_strategic: bool
-    strategic_priority: str = "CRITICAL"  # "CRITICAL", "HIGH", "NORMAL"
-    strategic_notes: str | None = None
+    strategic_priority: str = Field(default="CRITICAL", max_length=50)  # "CRITICAL", "HIGH", "NORMAL"
+    strategic_notes: str | None = Field(default=None, max_length=500)
 
 
 class HiddenImportItemDTO(BaseModel):

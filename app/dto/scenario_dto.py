@@ -2,9 +2,17 @@ from pydantic import BaseModel, Field
 
 
 class AIScenarioRequestDTO(BaseModel):
-    product_id: int = 1
-    geopolitical_event: str = "США и ЕС ужесточили санкции: блокада транзитных хабов в ОАЭ и Турции, банки Китая заблокировали 70% расчетов за микроэлектронику"
-    target_industry: str = "Машиностроение и станкостроение"
+    product_id: int = Field(default=1, ge=1)
+    geopolitical_event: str = Field(
+        default="США и ЕС ужесточили санкции: блокада транзитных хабов в ОАЭ и Турции, банки Китая заблокировали 70% расчетов за микроэлектронику",
+        min_length=3,
+        max_length=1000,
+    )
+    target_industry: str = Field(
+        default="Машиностроение и станкостроение",
+        min_length=2,
+        max_length=255,
+    )
 
 
 class AISupplyChainImpactDTO(BaseModel):

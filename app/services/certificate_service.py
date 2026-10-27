@@ -1,5 +1,5 @@
 import hashlib
-import random
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from app.dto.certificate_dto import CertificateResponseDTO, IssueCertificateRequestDTO
@@ -51,13 +51,13 @@ class CertificateService:
 
         audit_res = await self.compliance_service.evaluate_product(req.product_id)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         issued_at = now
         expires_at = issued_at + timedelta(days=req.valid_months * 30)
 
         # Генерация уникального регистрационного номера Минпромторга РФ
         # Добавляем ID изделия и микросекунды для гарантированной уникальности
-        unique_suffix = f"{req.product_id:02d}{now.strftime('%d%H%M')}-{random.randint(100, 999)}"
+        unique_suffix = f"{req.product_id:02d}{now.strftime('%d%H%M')}-{secrets.SystemRandom().randint(100, 999)}"
         reg_number = f"RU-МПТ-719/{now.year}-{unique_suffix}"
 
         signature_payload = f"{reg_number}:{req.product_id}:{audit_res.achieved_points}:{audit_res.defacto_localization_pct}:{issued_at.isoformat()}"

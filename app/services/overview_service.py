@@ -64,19 +64,31 @@ class OverviewService:
             tier1 = [c for c in components if c.tier == 1]
             if tier1:
                 tot_t1 = sum(c.unit_cost_rub * c.quantity for c in tier1)
-                eaeu_t1 = sum(c.unit_cost_rub * c.quantity for c in tier1 if c.country_code in ("RU", "BY", "KZ", "AM", "KG"))
+                eaeu_t1 = sum(
+                    c.unit_cost_rub * c.quantity for c in tier1 if c.country_code in ("RU", "BY", "KZ", "AM", "KG")
+                )
                 paper_loc = round((eaeu_t1 / tot_t1) * 100.0, 1) if tot_t1 > 0 else 100.0
             else:
                 top_level = [c for c in components if c.parent_id is None]
                 tot_top = sum(c.unit_cost_rub * c.quantity for c in top_level) or 1.0
-                eaeu_top = sum(c.unit_cost_rub * c.quantity for c in top_level if c.country_code in ("RU", "BY", "KZ", "AM", "KG"))
+                eaeu_top = sum(
+                    c.unit_cost_rub * c.quantity for c in top_level if c.country_code in ("RU", "BY", "KZ", "AM", "KG")
+                )
                 paper_loc = round((eaeu_top / tot_top) * 100.0, 1) if components else 100.0
 
             # 2. Непрерывная де-факто локализация (листья + аналоговые коэффициенты)
             weighted_safe = sum(
                 ((c.unit_cost_rub * c.quantity) / total_leaf_cost)
                 * (1.0 - c.country_risk)
-                * (1.0 if c.analog_status == "FULL_COMPATIBLE" else (0.7 if c.analog_status == "REQUIRES_REWORK" else (1.0 if c.country_code in ("RU", "BY") else 0.0)))
+                * (
+                    1.0
+                    if c.analog_status == "FULL_COMPATIBLE"
+                    else (
+                        0.7
+                        if c.analog_status == "REQUIRES_REWORK"
+                        else (1.0 if c.country_code in ("RU", "BY") else 0.0)
+                    )
+                )
                 for c in leaves
             )
             raw_defacto_pct = round(weighted_safe * 100.0, 1)
@@ -87,7 +99,7 @@ class OverviewService:
 
             o_ring_multiplier = 1.0
             for choke in chokepoints:
-                o_ring_multiplier *= (1.0 - 0.25 * float(choke.cfi_score))
+                o_ring_multiplier *= 1.0 - 0.25 * float(choke.cfi_score)
 
             defacto_loc = round(raw_defacto_pct * o_ring_multiplier, 1)
             gap_pct = max(0.0, round(paper_loc - defacto_loc, 1))
@@ -96,9 +108,11 @@ class OverviewService:
             if chokepoints:
                 prod_safe = 1.0
                 for choke in chokepoints:
-                    prod_safe *= (1.0 - float(choke.country_risk))
+                    prod_safe *= 1.0 - float(choke.country_risk)
                 stop_risk_pct = round((1.0 - prod_safe) * 100.0, 1)
-                days_to_halt = min((getattr(c, "lead_time_days", None) or (14 if c.country_risk >= 0.9 else 28)) for c in chokepoints)
+                days_to_halt = min(
+                    (getattr(c, "lead_time_days", None) or (14 if c.country_risk >= 0.9 else 28)) for c in chokepoints
+                )
             else:
                 stop_risk_pct = 5.0
                 days_to_halt = 360

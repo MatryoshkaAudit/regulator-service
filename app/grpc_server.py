@@ -42,9 +42,12 @@ class PolicyServiceServicer(policy_service_pb2_grpc.PolicyServiceServicer):
                     status_decision=res.status_decision,
                     certificate_recommendation=res.verdict_summary,
                 )
-            except Exception as e:
-                logger.error(f"gRPC EvaluatePP719 error: {e}")
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+            except ValueError as e:
+                logger.warning("gRPC EvaluatePP719 not found: %s", e)
+                context.abort(grpc.StatusCode.NOT_FOUND, str(e))
+            except Exception:
+                logger.exception("gRPC EvaluatePP719 error for product #%s", request.product_id)
+                context.abort(grpc.StatusCode.INTERNAL, "Внутренняя ошибка сервиса при аудите ПП РФ № 719")
 
     async def SimulateSanctionsShock(self, request, context):
         async with db_manager.get_session() as session:
@@ -80,9 +83,12 @@ class PolicyServiceServicer(policy_service_pb2_grpc.PolicyServiceServicer):
                     estimated_days_until_stockout=res.estimated_days_to_halt,
                     mitigation_roadmap=res.recommended_mitigation,
                 )
-            except Exception as e:
-                logger.error(f"gRPC SimulateSanctionsShock error: {e}")
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+            except ValueError as e:
+                logger.warning("gRPC SimulateSanctionsShock not found: %s", e)
+                context.abort(grpc.StatusCode.NOT_FOUND, str(e))
+            except Exception:
+                logger.exception("gRPC SimulateSanctionsShock error for product #%s", request.product_id)
+                context.abort(grpc.StatusCode.INTERNAL, "Внутренняя ошибка сервиса при симуляции санкционного шока")
 
     async def GenerateGeopoliticalScenario(self, request, context):
         service = AIScenarioService()
@@ -97,14 +103,14 @@ class PolicyServiceServicer(policy_service_pb2_grpc.PolicyServiceServicer):
                 scenario_id=res.scenario_id,
                 scenario_title=res.scenario_title,
                 ai_executive_summary=res.executive_verdict,
-                dynamic_policy_json=str(res.dict()),
+                dynamic_policy_json=res.model_dump_json(),
                 calculated_impact_severity=res.severity_score,
                 affected_supply_chains=[f"{c.node_name} ({c.severity})" for c in res.affected_supply_chains],
                 recommended_urgent_actions=res.regulatory_remedies,
             )
-        except Exception as e:
-            logger.error(f"gRPC GenerateGeopoliticalScenario error: {e}")
-            context.abort(grpc.StatusCode.INTERNAL, str(e))
+        except Exception:
+            logger.exception("gRPC GenerateGeopoliticalScenario error for event: %s", request.event_description)
+            context.abort(grpc.StatusCode.INTERNAL, "Внутренняя ошибка сервиса при ИИ-генерации сценария")
 
 
 class AuditServiceServicer(audit_service_pb2_grpc.AuditServiceServicer):
@@ -128,9 +134,9 @@ class AuditServiceServicer(audit_service_pb2_grpc.AuditServiceServicer):
                     certified_points=res.pp719_points,
                     digital_signature_hash=res.digital_signature_hash,
                 )
-            except Exception as e:
-                logger.error(f"gRPC IssueCertificate error: {e}")
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+            except Exception:
+                logger.exception("gRPC IssueCertificate error for product #%s", request.product_id)
+                context.abort(grpc.StatusCode.INTERNAL, "Внутренняя ошибка сервиса при выдаче цифрового заключения")
 
 
 async def serve_grpc(port: int = 50052) -> grpc.aio.Server:

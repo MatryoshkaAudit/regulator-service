@@ -4,7 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
-    url: str = os.getenv("DATABASE_URL") or os.getenv("DB_URL") or "postgresql+asyncpg://matryoshka:matryoshka_pass@localhost:5432/matryoshka_db"
+    url: str = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("DB_URL")
+        or "postgresql+asyncpg://matryoshka:matryoshka_pass@localhost:5432/matryoshka_db"
+    )
 
     model_config = SettingsConfigDict(env_prefix="db_", env_file=".env", extra="ignore")
 
@@ -27,11 +31,16 @@ class ExternalServicesSettings(BaseSettings):
 
 class RegulatorServiceSettings(BaseSettings):
     app_name: str = "Matryoshka Regulator Service"
-    rest_host: str = "0.0.0.0"
+    rest_host: str = "0.0.0.0"  # noqa: S104 - internal container interface binding
     rest_port: int = 8002
     grpc_port: int = 50052
     debug: bool = False
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
 
     model_config = SettingsConfigDict(env_prefix="service_", env_file=".env", extra="ignore")
 

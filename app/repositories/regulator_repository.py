@@ -54,10 +54,22 @@ class RegulatorRepository:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_policy_rule(self, industry_code: str = "28.3") -> PolicyRule | None:
-        query = select(PolicyRule).where(PolicyRule.industry_code == industry_code)
+    async def get_policy_rule(self, industry_code: str | None = None) -> PolicyRule | None:
+        if not industry_code:
+            query = select(PolicyRule).limit(1)
+            result = await self.session.execute(query)
+            return result.scalars().first()
+        code_prefix = industry_code.split()[0]
+        query = select(PolicyRule).where(
+            (PolicyRule.industry_code == industry_code) | (PolicyRule.industry_code.startswith(code_prefix))
+        )
         result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        rule = result.scalars().first()
+        if not rule:
+            query = select(PolicyRule).limit(1)
+            result = await self.session.execute(query)
+            rule = result.scalars().first()
+        return rule
 
     async def get_country_risks(self) -> dict[str, float]:
         query = select(CountryRisk)
@@ -151,12 +163,7 @@ class RegulatorRepository:
         return cert
 
     async def get_latest_certificate(self, product_id: int) -> Certificate | None:
-        query = (
-            select(Certificate)
-            .where(Certificate.product_id == product_id)
-            .order_by(Certificate.id.desc())
-            .limit(1)
-        )
+        query = select(Certificate).where(Certificate.product_id == product_id).order_by(Certificate.id.desc()).limit(1)
         result = await self.session.execute(query)
         return result.scalars().first()
 
