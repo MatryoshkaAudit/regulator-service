@@ -321,17 +321,17 @@ class AIScenarioService:
                             sum(a.base_substitution_pct for a in industry_audits) / len(industry_audits), 1
                         )
                         if industry_audits
-                        else 85.0,
+                        else 100.0,
                         "defacto_localization_pct": round(
                             sum(a.post_shock_substitution_pct for a in industry_audits) / len(industry_audits), 1
                         )
                         if industry_audits
-                        else 50.0,
+                        else 100.0,
                         "vulnerability_gap_pct": round(
                             sum(a.vulnerability_delta_pct for a in industry_audits) / len(industry_audits), 1
                         )
                         if industry_audits
-                        else 35.0,
+                        else 0.0,
                         "chokepoints_count": len(strategic_alerts),
                         "payload_json": json.dumps(
                             {

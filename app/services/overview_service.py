@@ -37,12 +37,12 @@ class OverviewService:
                         is_strategic=p.is_strategic,
                         strategic_priority=p.strategic_priority,
                         strategic_notes=p.strategic_notes,
-                        paper_localization_pct=85.0,
-                        defacto_localization_pct=85.0,
+                        paper_localization_pct=100.0,
+                        defacto_localization_pct=100.0,
                         vulnerability_gap_pct=0.0,
                         chokepoints_count=0,
-                        o_ring_stop_risk_pct=5.0,
-                        days_to_halt=180,
+                        o_ring_stop_risk_pct=0.0,
+                        days_to_halt=360,
                         status_label="СПЕЦИФИКАЦИЯ ФОРМИРУЕТСЯ",
                     )
                 )
