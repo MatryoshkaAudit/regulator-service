@@ -14,6 +14,7 @@ from app.dto.overview_dto import (
     HiddenImportItemDTO,
     PlantOverviewItemDTO,
     SetStrategicStatusDTO,
+    StrategicStatusResponseDTO,
     UpdateCountryRiskDTO,
 )
 from app.dto.sanctions_dto import SanctionsShockRequestDTO, SanctionsShockResultDTO
@@ -109,13 +110,13 @@ async def create_country_risk(
     )
 
 
-@router.put("/products/{product_id}/strategic-status", response_model=dict)
+@router.put("/products/{product_id}/strategic-status", response_model=StrategicStatusResponseDTO)
 async def set_product_strategic_status(
     product_id: int,
     payload: SetStrategicStatusDTO,
     repo: Annotated[RegulatorRepository, Depends(get_repo)],
     _user: Annotated[AuthenticatedUser, Depends(require_regulator_admin)],
-) -> dict:
+) -> StrategicStatusResponseDTO:
     """Присвоение предприятию/изделию статуса стратегической важности (ОПК / КИИ)"""
     product = await repo.set_product_strategic_status(
         product_id=product_id,
@@ -125,14 +126,14 @@ async def set_product_strategic_status(
     )
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Изделие не найдено")
-    return {
-        "success": True,
-        "product_id": product.id,
-        "enterprise_name": product.enterprise_name,
-        "is_strategic": product.is_strategic,
-        "strategic_priority": product.strategic_priority,
-        "strategic_notes": product.strategic_notes,
-    }
+    return StrategicStatusResponseDTO(
+        success=True,
+        product_id=product.id,
+        enterprise_name=product.enterprise_name,
+        is_strategic=product.is_strategic,
+        strategic_priority=product.strategic_priority,
+        strategic_notes=product.strategic_notes,
+    )
 
 
 @router.get("/audit/{product_id}", response_model=PP719AuditResponseDTO)

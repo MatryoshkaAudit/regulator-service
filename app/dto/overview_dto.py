@@ -51,6 +51,15 @@ class SetStrategicStatusDTO(BaseModel):
     strategic_notes: str | None = Field(default=None, max_length=500)
 
 
+class StrategicStatusResponseDTO(BaseModel):
+    success: bool = True
+    product_id: int
+    enterprise_name: str
+    is_strategic: bool
+    strategic_priority: str
+    strategic_notes: str | None = None
+
+
 class HiddenImportItemDTO(BaseModel):
     component_id: int
     product_id: int
